@@ -38,15 +38,12 @@ def logout():
 # Login Page
 def login_page():
     st.title("Login")
-
     with st.form("login_form"):
         username = st.text_input("Username")
         password = st.text_input("Password", type="password")
         submitted = st.form_submit_button("Login")
-
         if submitted:
             login(username, password)
-
     if st.session_state.login_attempts > 0:
         st.warning(f"Failed Login Attempts: {st.session_state.login_attempts}")
 
@@ -55,97 +52,82 @@ def dashboard():
     if not st.session_state.authenticated:
         login_page()
         return
-
-    st.markdown(
-        "<h1 style='text-align: center; color: #4A90E2;'>Windows User Management</h1>",
-        unsafe_allow_html=True
-    )
+    
+    st.markdown("<h1 style='text-align: center; color: #4A90E2;'>Windows User Management</h1>", unsafe_allow_html=True)
     st.write("Manage user accounts, check login activity, and remove accounts.")
-
-    # Styled Logout Button
-    st.markdown(
-        """
-        <style>
-        .logout-btn {
-            display: flex;
-            justify-content: center;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
-
-    st.markdown('<div class="logout-btn">', unsafe_allow_html=True)
-    if st.button("Logout", key="logout", help="Click to logout"):
-        logout()
-    st.markdown('</div>', unsafe_allow_html=True)
-
+    
+    st.markdown("<div class='logout-btn' style='text-align: center;'><button onclick='window.location.reload();'>Logout</button></div>", unsafe_allow_html=True)
+    
     FLASK_API_URL = "http://192.168.0.104:5000"
-
-    # Layout Sections
+    
+    # Fetch Data Functions
+    def fetch_data(endpoint, key):
+        response = requests.get(f"{FLASK_API_URL}/{endpoint}")
+        if response.status_code == 200:
+            data = response.json()
+            if key in data and isinstance(data[key], list) and len(data[key]) > 0:
+                return pd.DataFrame(data[key])
+            else:
+                return None
+        else:
+            return None
+    
     st.markdown("---")
     st.subheader("User Information")
-
-    col1, col2 = st.columns([1, 1])  # Equal width columns
-
+    
+    col1, col2 = st.columns([1, 1])
+    
     with col1:
         st.markdown("### 📋 Fetch User Data")
-
-        fetch_users = st.button("Fetch Users", key="fetch_users")
-        fetch_active_users = st.button("Fetch Active Users", key="fetch_active_users")
-        fetch_logs = st.button("Fetch Login Logs", key="fetch_logs")
-
-        if fetch_users:
-            response = requests.get(f"{FLASK_API_URL}/users")
-            if response.status_code == 200:
-                st.dataframe(pd.DataFrame(response.json(), columns=["Username"]))
+        if st.button("Fetch Users"):
+            df = fetch_data("users", "users")
+            if df is not None:
+                st.dataframe(df)
             else:
-                st.error("Failed to fetch users")
-
-        if fetch_active_users:
-            response = requests.get(f"{FLASK_API_URL}/active_users")
-            if response.status_code == 200:
-                st.dataframe(pd.DataFrame(response.json()))
+                st.warning("No users found.")
+        
+        if st.button("Fetch Active Users"):
+            df = fetch_data("active_users", "active_users")
+            if df is not None:
+                st.dataframe(df)
             else:
-                st.error("Failed to fetch active users")
-
-        if fetch_logs:
-            response = requests.get(f"{FLASK_API_URL}/logs")
-            if response.status_code == 200:
-                st.dataframe(pd.DataFrame(response.json()))
+                st.warning("No active users found.")
+        
+        if st.button("Fetch Login Logs"):
+            df = fetch_data("logs", "logs")
+            if df is not None:
+                st.dataframe(df)
             else:
-                st.error("Failed to fetch login logs")
-
+                st.warning("No login logs found.")
+    
     with col2:
         st.markdown("### 🔍 Search User Details")
-
-        username = st.text_input("Enter Username to Fetch Details", key="fetch_user_input")
-        if st.button("Get User Info", key="fetch_user") and username:
+        username = st.text_input("Enter Username to Fetch Details")
+        if st.button("Get User Info") and username:
             response = requests.get(f"{FLASK_API_URL}/user/{username}")
             if response.status_code == 200:
-                st.json(response.json())
+                data = response.json()
+                if data:
+                    st.json(data)
+                else:
+                    st.warning("User not found!")
             else:
-                st.error("User not found!")
-
+                st.error("Failed to fetch user details.")
+        
         st.markdown("### 🗑️ Remove User")
-
-        user_to_remove = st.text_input("Enter Username to Remove", key="remove_user_input")
-        if st.button("Remove User", key="remove_user") and user_to_remove:
+        user_to_remove = st.text_input("Enter Username to Remove")
+        if st.button("Remove User") and user_to_remove:
             response = requests.post(f"{FLASK_API_URL}/remove_user", json={"username": user_to_remove})
             if response.status_code == 200:
-                st.success(response.json()["message"])
+                result = response.json()
+                if "message" in result:
+                    st.success(result["message"])
+                else:
+                    st.warning("Unexpected response from server.")
             else:
                 st.error("Failed to remove user")
-
-    # Custom Footer
-    st.markdown(
-        """
-        <div style="text-align: center; margin-top: 20px; font-size: 14px; color: gray;">
-        Developed for Windows Account Management by Huzaifa
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    
+    st.markdown("<div style='text-align: center; margin-top: 20px; font-size: 14px; color: gray;'>Developed for Windows Account Management by Huzaifa</div>", unsafe_allow_html=True)
 
 # Conditional Rendering
 if st.session_state.authenticated:
