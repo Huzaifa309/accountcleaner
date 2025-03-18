@@ -1,7 +1,7 @@
 # Introduction
 
 This is the Semester project of the course "Information Systems Audit and Control" of FAST-NU, made by
-Syed Huzaifa Ahmed, Muhammad Zohain and Khuzaima Ahsan.
+Syed Huzaifa Ahmed, Muhammad Zohaib and Khuzaima Ahsan.
 
 # What it does
 
