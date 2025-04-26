@@ -57,7 +57,7 @@ streamlit run app.py
 
 ## Server Management
 
-To stop the server:
+To stop the server running on the target machine:
 ```bash
 python server_delete.py
 ```
